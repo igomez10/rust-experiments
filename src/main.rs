@@ -3,6 +3,8 @@ extern crate serde;
 extern crate serde_json;
 extern crate url;
 
+use std::{io::Write, net::TcpListener};
+
 pub mod pkg;
 #[tokio::main]
 async fn main() {
@@ -27,6 +29,26 @@ async fn main() {
 
     make_walk(somedog);
     make_walk(usera);
+
+    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    println!("Listening on port 7878");
+    for stream in listener.incoming() {
+        if stream.is_err() {
+            println!("Error: {}", stream.unwrap_err());
+            continue;
+        }
+        let mut stream = stream.unwrap();
+        let status_line = "HTTP/1.1 200 OK";
+        let contents = "Hello, World!";
+        let length = contents.len();
+
+        let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
+
+        stream.write_all(response.as_bytes()).unwrap();
+
+        println!("Connection established!");
+        drop(stream)
+    }
 }
 
 struct User {
